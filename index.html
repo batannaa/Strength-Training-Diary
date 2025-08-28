@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Strength Training Diary</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div class="container py-4">
+    
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">
+          <img src="images/logo1.png" alt="Training Diary Logo" width="100" height="100">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link" href="index.html">Workout Log</a></li>
+            <li class="nav-item"><a class="nav-link active" href="progress.html">Progress</a></li>
+            <li class="nav-item"><a class="nav-link" href="photo_progress.html">Photo Progress</a></li>
+            <li class="nav-item"><a class="nav-link" href="calculators.html">Calculators</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Weekly Progress -->
+    <div class="mb-4">
+      <label for="weeklyProgress" class="form-label fw-bold">Weekly Progress</label>
+      <progress id="weeklyProgress" value="1" max="5"></progress>
+      <div class="text-muted small">
+        You've logged <span id="workoutCount">1</span> of 5 sessions this week
+      </div>
+    </div>
+
+    <!-- Workout Form -->
+    <form id="trainingForm">
+      
+      <!-- Date -->
+      <div class="mb-3">
+        <label for="dateInput" class="form-label fw-bold">Date & Day</label>
+        <input type="date" class="form-control" id="dateInput">
+        <div id="dayOfWeek" class="mt-1 text-muted"></div>
+      </div>
+
+      <!-- Cardio -->
+      <h5 class="mb-3 d-flex align-items-center">
+        Cardio Training
+        <img src="images/velo.png" alt="Velo" width="60" height="60" class="ms-2">
+      </h5>
+      <table class="table table-bordered mb-2">
+        <thead>
+          <tr>
+            <th>Activity</th>
+            <th>Time (min)</th>
+            <th>Distance (km)</th>
+            <th>Avg. Speed (km/h)</th>
+            <th>Steps</th>
+          </tr>
+        </thead>
+        <tbody id="cardioBody">
+          <tr>
+            <td>
+              <select class="form-select activity-select">
+                <option selected>Select...</option>
+                <option value="run">Running</option>
+                <option value="walk">Walking</option>
+                <option value="bike">Biking</option>
+                <option value="ski">Skiing</option>
+                <option value="elliptical">Elliptical</option>
+                <option value="other">Other</option>
+              </select>
+              <input type="text" class="form-control activity-other-input mt-2" style="display: none;" placeholder="Enter activity">
+            </td>
+            <td><input type="number" class="form-control" placeholder="30"></td>
+            <td><input type="number" step="0.1" class="form-control" placeholder="5"></td>
+            <td><input type="number" step="0.1" class="form-control" placeholder="10"></td>
+            <td><input type="number" class="form-control" placeholder="6000"></td>
+          </tr>
+        </tbody>
+      </table>
+      <button type="button" class="btn btn-secondary mb-3" onclick="addCardioRow()">Add Cardio</button>
+
+      <!-- Joint Mobility -->
+      <div class="mb-3">
+        <label class="form-label">Joint Mobility</label>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="joint">
+          <label class="form-check-label" for="joint">Done</label>
+          <button type="button" class="btn btn-link btn-sm" onclick="toggleJointInfo()">What is it?</button>
+        </div>
+        <div id="jointInfo" class="mt-2 text-muted" style="display: none; font-size: 0.9em;">
+          Joint mobility is a warm-up for joints (neck, shoulders, hips, knees, etc.), helps prevent injuries, improves mobility, and is performed at the beginning of a workout.
+          <br>
+          <em>Joint mobility is a warm-up for joints (neck, shoulders, hips, knees, etc.).</em>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- Strength Workout -->
+      <h5 class="mb-3 d-flex align-items-center">
+        Strength Workout
+        <img src="images/barbell.png" alt="Barbell" width="60" height="60" class="ms-2">
+      </h5>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Exercise</th>
+            <th>Sets</th>
+            <th>Reps</th>
+            <th>Weight (kg)</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody id="workoutBody">
+          <tr>
+            <td><input type="text" class="form-control" placeholder="Barbell Squat"></td>
+            <td><input type="number" class="form-control" placeholder="3"></td>
+            <td><input type="number" class="form-control" placeholder="10"></td>
+            <td><input type="number" class="form-control" placeholder="50"></td>
+            <td><input type="text" class="form-control"></td>
+          </tr>
+        </tbody>
+      </table>
+      <button type="button" class="btn btn-secondary mb-3" onclick="addRow()">Add Exercise</button>
+
+      <!-- Reflection -->
+      <div class="mb-3">
+        <label for="notes" class="form-label">Reflection / Next Training Goal</label>
+        <textarea id="notes" class="form-control" rows="3" placeholder="E.g. Felt strong, improve form, add 5kg next time."></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

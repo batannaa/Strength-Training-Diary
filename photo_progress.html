@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Progress</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+         body {
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+    h1, h2, h3 {
+      color: #343a40;
+    }
+    .card-img-top {
+      border-bottom: 1px solid #dee2e6;
+    }
+    /* Стили для индикаторов прогресса */
+    .progress-up { color: green; }
+    .progress-down { color: red; }
+    .progress-good-down { color: green; }
+    .progress-bad-up { color: red; }
+    
+    /* Стили для блоков сравнения фото */
+    .comparison-container {
+      background-color: #ffffff;
+      border: 1px solid #dee2e6;
+      border-radius: .375rem;
+      padding: 1rem;
+    }
+    .comparison-image-wrapper {
+      height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #e9ecef;
+      border-radius: .25rem;
+      text-align: center;
+      color: #6c757d;
+      overflow: hidden; /* Added to prevent image overflow if it's too large */
+      max-width: 100px; /* Ajustez cette valeur selon vos besoins */
+      margin: 0 auto; 
+    }
+    .comparison-image-wrapper img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    /* Стили для карусели */
+    #photoCarousel .carousel-item img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain; /* Убедитесь, что изображение вписывается без обрезки и искажений */
+        height: 400px; /* Фиксированная высота для всех изображений в карусели */
+        width: auto; /* Позволяет ширине подстраиваться под высоту */
+        margin: auto; /* Центрирует изображение */
+    }
+
+    #photoCarousel .carousel-caption {
+        position: static; /* Делает подпись частью потока документа, а не накладывает её */
+        padding-top: 10px;
+        padding-bottom: 10px;
+        color: #250d6e; /* Цвет текста в подписи */
+        text-align: center;
+    }
+      #firstPhotoContainer.comparison-image-wrapper,
+      #lastPhotoContainer.comparison-image-wrapper,
+      #comparePhoto1.comparison-image-wrapper,
+      #comparePhoto2.comparison-image-wrapper {
+   max-width: 500px; /* Ajustez pour la largeur souhaitée */
+  }
+
+  </style>
+</head>
+<body onload="loadUserData();">
+  <div class="container py-4">
+    
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">
+          <img src="images/logo1.png" alt="Training Diary Logo" width="100" height="100">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link" href="index.html">Workout Log</a></li>
+            <li class="nav-item"><a class="nav-link active" href="progress.html">Progress</a></li>
+            <li class="nav-item"><a class="nav-link active" href="photo_progress.html">Photo Progress</a></li>
+            <li class="nav-item"><a class="nav-link" href="calculators.html">Calculators</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <h2 class="mb-4">Data and Measurements</h2>
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3">
+          <div class="card-header">Current Weight</div>
+          <div class="card-body">
+            <h5 class="card-title" id="currentWeight">— kg</h5>
+            <p class="card-text" id="weightChange">—</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-white bg-info mb-3">
+          <div class="card-header">Current BMI</div>
+          <div class="card-body">
+            <h5 class="card-title" id="currentBmi">—</h5>
+            <p class="card-text" id="bmiInterpretation">—</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card">
+         <div class="card-header">Your Height</div>
+          <div class="card-body">
+            <div class="input-group">
+                <input type="number" id="userHeight" class="form-control" placeholder="Height in cm">
+                <button class="btn btn-secondary" onclick="saveHeight()">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-5">
+        <div class="card-header">
+            Add Photo and Measurements
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <label for="photoDate" class="form-label">Date:</label>
+                <input type="date" id="photoDate" class="form-control mb-2">
+        
+                <label for="photoUpload" class="form-label">Upload Photo:</label>
+                <input type="file" id="photoUpload" accept="image/*" class="form-control mb-2">
+                <button class="btn btn-success w-100" onclick="addPhoto()">Add Photo</button>
+                <ul>
+                    <li><b>Angle and Pose:</b> Always take photos from the same angle (e.g., front, side, back) and in the same pose, standing straight with relaxed arms.</li>
+                    <li><b>Lighting:</b> Use even, bright lighting. Avoid harsh shadows. Natural daylight by a window is often best.</li>
+                    <li><b>Background:</b> Choose a simple, plain background so nothing distracts from your progress.</li>
+                    <li><b>Clothing:</b> Wear tight-fitting clothes (e.g., swimsuit, sports underwear) so body changes are more visible.</li>
+                    <li><b>Full Height:</b> Try to take full-body photos to see the overall changes. The system scales photos, but for best comparison, upload images where you are fully visible.</li>
+                </ul>
+              </div>
+        
+              <div class="col-md-6">
+                <label for="weight" class="form-label">Weight (kg):</label>
+                <input type="number" id="weight" class="form-control mb-2" min="40" max="130" step="0.1">
+        
+                <label for="waist" class="form-label">Waist (cm):</label>
+                <input type="number" id="waist" class="form-control mb-2" step="0.5">
+        
+                <label for="hips" class="form-label">Hips (cm):</label>
+                <input type="number" id="hips" class="form-control mb-2" step="0.5">
+        
+                <label for="chest" class="form-label">Chest (cm):</label>
+                <input type="number" id="chest" class="form-control mb-2" step="0.5">
+        
+                <label for="biceps" class="form-label">Biceps (cm):</label>
+                <input type="number" id="biceps" class="form-control mb-2" step="0.5">
+        
+                <button class="btn btn-primary w-100 mt-4" onclick="saveMeasurements()">Save Measurements</button>
+              </div>
+            </div>
+        </div>
+    </div>
+
+  <h3 class="mb-3">Photo Gallery</h3>
+  <p id="noPhotosMessage">No photos uploaded yet. Add at least two photos to see a comparison.</p>
+
+  <div id="photoCarousel" class="carousel slide" data-bs-ride="carousel" style="display: none;">
+    <div class="carousel-inner" id="carouselInner">
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#photoCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#photoCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Next</span>
+    </button>
+  </div>
+
+  <h1 class="mb-4">Visual Progress</h1>
+
+    <div id="photoComparisonSection" class="mb-5" style="display: none;">
+        <h2 class="h4 mb-3">Overall Progress (First Photo vs. Last)</h2>
+        <div class="row mb-4 g-3">
+            <div class="col-md-6">
+                <div id="firstPhotoContainer" class="comparison-image-wrapper"><span>First Photo</span></div>
+            </div>
+            <div class="col-md-6">
+                <div id="lastPhotoContainer" class="comparison-image-wrapper"><span>Last Photo</span></div>
+            </div>
+        </div>
+
+        <h2 class="h4 mb-3">Compare Any Two Dates</h2>
+        <div class="comparison-container">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="photoSelect1" class="form-label">Photo 1:</label>
+                    <select id="photoSelect1" class="form-select mb-2" onchange="updateCompareImages()"></select>
+                    <div id="comparePhoto1" class="comparison-image-wrapper"><span>Select a photo</span></div>
+                </div>
+                <div class="col-md-6">
+                    <label for="photoSelect2" class="form-label">Photo 2:</label>
+                    <select id="photoSelect2" class="form-select mb-2" onchange="updateCompareImages()"></select>
+                    <div id="comparePhoto2" class="comparison-image-wrapper"><span>Select a photo</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="mt-5 mb-3">Measurement History</h3>
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Weight (kg)</th>
+          <th>BMI</th>
+          <th>Waist (cm)</th>
+          <th>Hips (cm)</th>
+          <th>Chest (cm)</th>
+          <th>Biceps (cm)</th>
+        </tr>
+      </thead>
+      <tbody id="measurementsTable"></tbody>
+    </table>
+  </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // --- GLOBAL FUNCTIONS ---
+  function loadUserData() {
+    loadHeight();
+    loadPhotos();
+    loadMeasurements();
+    document.getElementById('photoDate').valueAsDate = new Date();
+  }
+  
+  // --- HEIGHT MANAGEMENT ---
+  function saveHeight() {
+    const height = document.getElementById('userHeight').value;
+    if (height && height > 100 && height < 250) {
+      localStorage.setItem('userHeight', height);
+      alert('Height saved!');
+      loadMeasurements(); 
+    } else {
+      alert('Please enter a valid height in centimeters (e.g., 175).');
+    }
+  }
+
+  function loadHeight() {
+    const height = localStorage.getItem('userHeight');
+    if (height) {
+      document.getElementById('userHeight').value = height;
+    }
+  }
+
+  // --- PHOTO MANAGEMENT ---
+  function addPhoto() {
+    const photoDate = document.getElementById('photoDate').value;
+    const file = document.getElementById('photoUpload').files[0];
+    if (!photoDate || !file) {
+      alert('Please select a date and a photo.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      let photos = JSON.parse(localStorage.getItem('progressPhotos')) || [];
+      const existingPhotoIndex = photos.findIndex(p => p.date === photoDate);
+
+      if (existingPhotoIndex > -1) {
+          if(!confirm('A photo for this date already exists. Replace it?')) {
+              return;
+          }
+          photos.splice(existingPhotoIndex, 1); // Remove old photo if replaced
+      }
+      
+      photos.push({ date: photoDate, src: e.target.result });
+      localStorage.setItem('progressPhotos', JSON.stringify(photos));
+      loadPhotos();
+      document.getElementById('photoUpload').value = '';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Function to load photos into the carousel
+  function loadPhotos() {
+    const carouselInner = document.getElementById('carouselInner');
+    const noPhotosMessage = document.getElementById('noPhotosMessage');
+    const photoCarousel = document.getElementById('photoCarousel');
+    let photos = JSON.parse(localStorage.getItem('progressPhotos')) || [];
+
+    carouselInner.innerHTML = ''; // Clear carousel before populating
+
+    if (photos.length === 0) {
+        noPhotosMessage.style.display = 'block';
+        photoCarousel.style.display = 'none'; // Hide carousel if no photos
+    } else {
+        noPhotosMessage.style.display = 'none';
+        photoCarousel.style.display = 'block'; // Show carousel
+        photos.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort from newest to oldest
+
+        photos.forEach((photo, index) => {
+            const carouselItem = document.createElement('div');
+            carouselItem.className = `carousel-item ${index === 0 ? 'active' : ''}`; // First item is active
+
+            carouselItem.innerHTML = `
+                <div class="d-flex justify-content-center align-items-center" style="height: 400px; background-color: #e9ecef; border-radius: .25rem;">
+                    <img src="${photo.src}" class="d-block" alt="Photo from ${photo.date}" style="max-height: 100%; object-fit: contain; width: auto;">
+                </div>
+                <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded">
+                    <h5>${photo.date}</h5>
+                    <button class="btn btn-danger btn-sm mt-2" onClick="deletePhoto('${photo.date}')">Delete</button>
+                </div>
+            `;
+            carouselInner.appendChild(carouselItem);
+        });
+
+       
+    }
+    updatePhotoComparisonUI();
+  }
+  
+  function deletePhoto(date) {
+    if (!confirm(`Delete photo from ${date}?`)) return;
+    let photos = JSON.parse(localStorage.getItem('progressPhotos')) || [];
+    photos = photos.filter(p => p.date !== date);
+    localStorage.setItem('progressPhotos', JSON.stringify(photos));
+    loadPhotos();
+  }
+
+  // --- PHOTO COMPARISON LOGIC ---
+  function updatePhotoComparisonUI() {
+      const photos = JSON.parse(localStorage.getItem('progressPhotos')) || [];
+      const comparisonSection = document.getElementById('photoComparisonSection');
+      
+      if (photos.length < 2) {
+          comparisonSection.style.display = 'none';
+          return;
+      }
+      comparisonSection.style.display = 'block';
+
+      photos.sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort from oldest to newest
+      
+      const firstPhoto = photos[0];
+      const lastPhoto = photos[photos.length - 1];
+
+      // 1. Automatic comparison
+      document.getElementById('firstPhotoContainer').innerHTML = `<img src="${firstPhoto.src}" alt="First photo: ${firstPhoto.date}"><p class="mt-2 mb-0 small text-muted">${firstPhoto.date}</p>`;
+      document.getElementById('lastPhotoContainer').innerHTML = `<img src="${lastPhoto.src}" alt="Last photo: ${lastPhoto.date}"><p class="mt-2 mb-0 small text-muted">${lastPhoto.date}</p>`;
+      
+      // 2. Flexible comparison
+      const select1 = document.getElementById('photoSelect1');
+      const select2 = document.getElementById('photoSelect2');
+      select1.innerHTML = '';
+      select2.innerHTML = '';
+      
+      photos.forEach(photo => {
+          select1.innerHTML += `<option value="${photo.src}">${photo.date}</option>`;
+          select2.innerHTML += `<option value="${photo.src}">${photo.date}</option>`;
+      });
+
+      // Set default values (first and last photo)
+      select1.value = firstPhoto.src;
+      select2.value = lastPhoto.src;
+
+      updateCompareImages();
+  }
+
+  function updateCompareImages() {
+      const select1 = document.getElementById('photoSelect1');
+      const select2 = document.getElementById('photoSelect2');
+      const comparePhoto1 = document.getElementById('comparePhoto1');
+      const comparePhoto2 = document.getElementById('comparePhoto2');
+
+      if (select1.value) {
+        const selectedDate1 = select1.options[select1.selectedIndex].text;
+        comparePhoto1.innerHTML = `<img src="${select1.value}" alt="Photo from ${selectedDate1}">`;
+      } else {
+        comparePhoto1.innerHTML = `<span>Select photo 1</span>`;
+      }
+
+      if (select2.value) {
+        const selectedDate2 = select2.options[select2.selectedIndex].text;
+        comparePhoto2.innerHTML = `<img src="${select2.value}" alt="Photo from ${selectedDate2}">`;
+      } else {
+        comparePhoto2.innerHTML = `<span>Select photo 2</span>`;
+      }
+  }
+
+  // --- MEASUREMENTS MANAGEMENT ---
+  function saveMeasurements() {
+    const date = document.getElementById('photoDate').value;
+    const weight = document.getElementById('weight').value;
+    if (!date || !weight) {
+      alert('Please enter date and weight — these fields are required.');
+      return;
+    }
+    const newMeasurement = {
+      date: date, weight: parseFloat(weight) || null,
+      waist: parseFloat(document.getElementById('waist').value) || null,
+      hips: parseFloat(document.getElementById('hips').value) || null,
+      chest: parseFloat(document.getElementById('chest').value) || null,
+      biceps: parseFloat(document.getElementById('biceps').value) || null,
+    };
+    let data = JSON.parse(localStorage.getItem('bodyMeasurements')) || [];
+    const existingIndex = data.findIndex(d => d.date === date);
+    if(existingIndex > -1){
+        if(confirm('A record for this date already exists. Update it?')){
+            data[existingIndex] = newMeasurement;
+        } else {
+            return;
+        }
+    } else {
+       data.push(newMeasurement);
+    }
+    data.sort((a, b) => new Date(a.date) - new Date(b.date));
+    localStorage.setItem('bodyMeasurements', JSON.stringify(data));
+    loadMeasurements();
+    ['weight', 'waist', 'hips', 'chest', 'biceps'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  function loadMeasurements() {
+    const tableBody = document.getElementById('measurementsTable');
+    let data = JSON.parse(localStorage.getItem('bodyMeasurements')) || [];
+    tableBody.innerHTML = '';
+    const heightCm = localStorage.getItem('userHeight');
+    const heightM = heightCm ? parseFloat(heightCm) / 100 : null;
+    const reversedData = [...data].reverse();
+    reversedData.forEach((current, index) => {
+      const previous = reversedData[index + 1] || null;
+      const bmi = calculateBmi(current.weight, heightM);
+      const row = `<tr>
+        <td>${current.date}</td>
+        <td>${formatValue(current.weight, previous ? previous.weight : null, true)}</td>
+        <td>${bmi.value ? bmi.value.toFixed(1) : '—'}</td>
+        <td>${formatValue(current.waist, previous ? previous.waist : null, true)}</td>
+        <td>${formatValue(current.hips, previous ? previous.hips : null, false)}</td>
+        <td>${formatValue(current.chest, previous ? previous.chest : null, false)}</td>
+        <td>${formatValue(current.biceps, previous ? previous.biceps : null, false)}</td>
+      </tr>`;
+      tableBody.innerHTML += row;
+    });
+    updateSummaryCards(data, heightM);
+  }
+
+  function formatValue(current, previous, isDecreaseGood) {
+    if (current === null || current === undefined) return '—';
+    let changeHtml = '';
+    if (previous !== null && previous !== undefined && current !== previous) {
+      const diff = (current - previous).toFixed(1);
+      const sign = diff > 0 ? '+' : '';
+      let className = '';
+      if (diff > 0) {
+        className = isDecreaseGood ? 'progress-bad-up' : 'progress-up';
+        changeHtml = ` <span class="${className}">(${sign}${diff} ▲)</span>`;
+      } else {
+        className = isDecreaseGood ? 'progress-good-down' : 'progress-down';
+        changeHtml = ` <span class="${className}">(${sign}${diff} ▼)</span>`;
+      }
+    }
+    return `${current}${changeHtml}`;
+  }
+
+  function calculateBmi(weight, heightM) {
+    if (!weight || !heightM) return { value: null, interpretation: 'No data' };
+    const bmi = weight / (heightM * heightM);
+    let interpretation = '';
+    if (bmi < 18.5) interpretation = 'Underweight';
+    else if (bmi < 25) interpretation = 'Normal weight';
+    else if (bmi < 30) interpretation = 'Overweight';
+    else interpretation = 'Obesity';
+    return { value: bmi, interpretation: interpretation };
+  }
+
+  function updateSummaryCards(data, heightM) {
+    const weightDisplay = document.getElementById('currentWeight');
+    const changeDisplay = document.getElementById('weightChange');
+    const bmiDisplay = document.getElementById('currentBmi');
+    const bmiInterpretationDisplay = document.getElementById('bmiInterpretation');
+
+    if (data.length > 0) {
+      const last = data[data.length - 1];
+      const first = data[0];
+      weightDisplay.textContent = `${last.weight} kg`;
+      const diff = (last.weight - first.weight).toFixed(1);
+      if (data.length > 1) {
+          changeDisplay.textContent = diff == 0.0 ? 'No weight change' : (diff > 0 ? `+${diff} kg since start` : `${diff} kg since start`);
+      } else {
+          changeDisplay.textContent = 'First entry';
+      }
+      const bmi = calculateBmi(last.weight, heightM);
+      bmiDisplay.textContent = bmi.value ? bmi.value.toFixed(1) : '—';
+      bmiInterpretationDisplay.textContent = bmi.interpretation;
+    } else {
+      weightDisplay.textContent = '—';
+      changeDisplay.textContent = 'No data';
+      bmiDisplay.textContent = '—';
+      bmiInterpretationDisplay.textContent = 'Enter height and weight';
+    }
+  }
+</script>
+</body>
+</html>
