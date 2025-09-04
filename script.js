@@ -14,17 +14,17 @@ if (isDiaryPage) {
 
     const entry = {
       date: document.getElementById("trainingDate").value,
-      activity: document.getElementById("activity").value || null,
-      time: document.getElementById("time").value || null,
-      distance: document.getElementById("distance").value || null,
-      speed: document.getElementById("speed").value || null,
-      steps: document.getElementById("steps").value || null,
-      exercise: document.getElementById("exercise").value || null,
-      sets: document.getElementById("sets").value || null,
-      reps: document.getElementById("reps").value || null,
-      weight: document.getElementById("weight").value || null,
-      notesEx: document.getElementById("notesEx").value || null,
-      notes: document.getElementById("notes").value || null,
+      activity: document.getElementById("activity").value || "—",
+      time: document.getElementById("time").value || "—",
+      distance: document.getElementById("distance").value || "—",
+      speed: document.getElementById("speed").value || "—",
+      steps: document.getElementById("steps").value || "—",
+      exercise: document.getElementById("exercise").value || "—",
+      sets: document.getElementById("sets").value || "—",
+      reps: document.getElementById("reps").value || "—",
+      weight: document.getElementById("weight").value || "—",
+      notesEx: document.getElementById("notesEx").value || "—",
+      notes: document.getElementById("notes").value || "—",
     };
 
     if (!entry.activity && !entry.exercise) {
@@ -137,16 +137,26 @@ if (isProgressPage) {
   const measureForm = document.getElementById("measureForm");
   const photoForm = document.getElementById("photoForm");
   const measurementsTable = document.getElementById("measurementsTable");
-  const photoInput = document.getElementById("photoInput");
-  const photoGallery = document.getElementById("photoGallery");
   const userHeightInput = document.getElementById("userHeight");
   const saveHeightBtn = document.getElementById("saveHeightBtn");
+  const photoGallery = document.getElementById("photoGallery");
 
   // Summary Cards
   const currentWeightEl = document.getElementById("currentWeight");
   const weightChangeEl = document.getElementById("weightChange");
   const currentBmiEl = document.getElementById("currentBmi");
   const bmiInterpretationEl = document.getElementById("bmiInterpretation");
+
+  // Photo Capture Elements
+  const cameraStream = document.getElementById("cameraStream");
+  const photoCanvas = document.getElementById("photoCanvas");
+  const capturedPhoto = document.getElementById("capturedPhoto");
+  const photoInput = document.getElementById("photoInput");
+  const toggleCameraBtn = document.getElementById("toggleCameraBtn");
+  const savePhotoBtn = document.getElementById("savePhotoBtn");
+  const retakePhotoBtn = document.getElementById("retakePhotoBtn");
+  let stream = null;
+  let currentPhotoBase64 = null;
 
   // Photo Comparison Elements
   const photoComparisonSection = document.getElementById(
@@ -226,10 +236,8 @@ if (isProgressPage) {
       localStorage.getItem("measurements") || "[]"
     );
 
-    // Sort by date to get most recent
     measurements.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // Update summary cards
     if (measurements.length > 0) {
       const latest = measurements[0];
       currentWeightEl.textContent = `${latest.weight || "—"} kg`;
@@ -262,7 +270,6 @@ if (isProgressPage) {
       bmiInterpretationEl.textContent = "Enter your height and weight";
     }
 
-    // Render table rows
     measurements.forEach((m, index) => {
       const bmi = calculateBmi(m.weight, userHeight);
       const row = document.createElement("tr");
@@ -278,7 +285,6 @@ if (isProgressPage) {
                     <button class="delete-btn"><i class="fas fa-trash-alt"></i></button>
                 </td>
             `;
-      // Note: The index here is based on the sorted array, need to find original index for splice
       row
         .querySelector(".delete-btn")
         .addEventListener("click", () => handleDeleteMeasurement(index));
@@ -297,37 +303,108 @@ if (isProgressPage) {
     }
   }
 
-  // Photo Progress
-  photoForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const file = photoInput.files[0];
-    const date = document.getElementById("photoDate").value;
-    const weight = document.getElementById("photoWeight").value;
+  // Photo Progress Logic
+  let isCameraOn = false;
 
-    if (!file || !date || !weight) {
-      alert("Please provide a date, weight, and a photo.");
-      return;
+  toggleCameraBtn.addEventListener("click", async () => {
+    if (!isCameraOn) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user" },
+        });
+        cameraStream.srcObject = stream;
+        cameraStream.style.display = "block";
+        toggleCameraBtn.textContent = "Take Photo";
+        isCameraOn = true;
+      } catch (err) {
+        console.error("Error accessing camera: ", err);
+        alert("Could not access camera. Please check your permissions.");
+      }
+    } else {
+      // Take photo
+      photoCanvas.width = cameraStream.videoWidth;
+      photoCanvas.height = cameraStream.videoHeight;
+      photoCanvas
+        .getContext("2d")
+        .drawImage(cameraStream, 0, 0, photoCanvas.width, photoCanvas.height);
+      currentPhotoBase64 = photoCanvas.toDataURL("image/jpeg", 0.8);
+      capturedPhoto.src = currentPhotoBase64;
+
+      cameraStream.style.display = "none";
+      capturedPhoto.style.display = "block";
+      toggleCameraBtn.style.display = "none";
+      savePhotoBtn.style.display = "block";
+      retakePhotoBtn.style.display = "block";
+
+      // Stop camera stream
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+        stream = null;
+      }
+      isCameraOn = false;
     }
+  });
+
+  retakePhotoBtn.addEventListener("click", () => {
+    capturedPhoto.style.display = "none";
+    cameraStream.style.display = "block";
+    savePhotoBtn.style.display = "none";
+    retakePhotoBtn.style.display = "none";
+    toggleCameraBtn.style.display = "block";
+    currentPhotoBase64 = null;
+    toggleCameraBtn.click(); // Re-start camera stream
+  });
+
+  photoInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const photos = JSON.parse(localStorage.getItem("photos") || "[]");
-      photos.push({
-        date: date,
-        weight: weight,
-        photoUrl: event.target.result,
-      });
-      localStorage.setItem("photos", JSON.stringify(photos));
-      renderPhotos();
-      photoForm.reset();
+      currentPhotoBase64 = event.target.result;
+      // Display captured photo instead of stream
+      cameraStream.style.display = "none";
+      capturedPhoto.src = currentPhotoBase64;
+      capturedPhoto.style.display = "block";
+
+      // Show save/retake buttons
+      toggleCameraBtn.style.display = "none";
+      savePhotoBtn.style.display = "block";
+      retakePhotoBtn.style.display = "block";
     };
     reader.readAsDataURL(file);
   });
 
+  photoForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const date = document.getElementById("photoDate").value;
+    const weight = document.getElementById("photoWeight").value;
+
+    if (!currentPhotoBase64 || !date || !weight) {
+      alert("Please capture or upload a photo, and enter date and weight.");
+      return;
+    }
+
+    const photos = JSON.parse(localStorage.getItem("photos") || "[]");
+    photos.push({
+      date: date,
+      weight: weight,
+      photoUrl: currentPhotoBase64,
+    });
+    localStorage.setItem("photos", JSON.stringify(photos));
+    renderPhotos();
+    photoForm.reset();
+
+    // Reset to initial state
+    capturedPhoto.style.display = "none";
+    toggleCameraBtn.style.display = "block";
+    savePhotoBtn.style.display = "none";
+    retakePhotoBtn.style.display = "none";
+    currentPhotoBase64 = null;
+  });
+
   function renderPhotos() {
     photoGallery.innerHTML = "";
-    photoSelect1.innerHTML = "";
-    photoSelect2.innerHTML = "";
     const photos = JSON.parse(localStorage.getItem("photos") || "[]");
 
     if (photos.length === 0) {
@@ -341,6 +418,12 @@ if (isProgressPage) {
         photoComparisonSection.style.display = "none";
       }
     }
+
+    photoSelect1.innerHTML = "";
+    photoSelect2.innerHTML = "";
+
+    // Sort photos by date descending
+    photos.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     photos.forEach((photoObj, index) => {
       const photoWrapper = document.createElement("div");
@@ -364,12 +447,10 @@ if (isProgressPage) {
       photoWrapper.appendChild(deleteBtn);
       photoGallery.appendChild(photoWrapper);
 
-      // Add event listener for modal
       img.addEventListener("click", () => openModal(photoObj));
 
-      // Populate comparison dropdowns
       const option = document.createElement("option");
-      option.value = index;
+      option.value = photoObj.date;
       option.textContent = `${photoObj.date} (${photoObj.weight} kg)`;
       photoSelect1.appendChild(option.cloneNode(true));
       photoSelect2.appendChild(option);
@@ -377,8 +458,8 @@ if (isProgressPage) {
 
     // Select first and last photos by default
     if (photos.length >= 2) {
-      photoSelect1.value = 0;
-      photoSelect2.value = photos.length - 1;
+      photoSelect1.value = photos[photos.length - 1].date;
+      photoSelect2.value = photos[0].date;
     }
 
     updateComparison();
@@ -411,17 +492,20 @@ if (isProgressPage) {
 
   function updateComparison() {
     const photos = JSON.parse(localStorage.getItem("photos") || "[]");
-    const index1 = photoSelect1.value;
-    const index2 = photoSelect2.value;
+    const date1 = photoSelect1.value;
+    const date2 = photoSelect2.value;
 
-    if (photos[index1]) {
-      comparePhoto1.innerHTML = `<img src="${photos[index1].photoUrl}" alt="Photo 1">`;
+    const photo1 = photos.find((p) => p.date === date1);
+    const photo2 = photos.find((p) => p.date === date2);
+
+    if (photo1) {
+      comparePhoto1.innerHTML = `<img src="${photo1.photoUrl}" alt="Photo 1">`;
     } else {
       comparePhoto1.innerHTML = `<span class="placeholder-text">Select a photo</span>`;
     }
 
-    if (photos[index2]) {
-      comparePhoto2.innerHTML = `<img src="${photos[index2].photoUrl}" alt="Photo 2">`;
+    if (photo2) {
+      comparePhoto2.innerHTML = `<img src="${photo2.photoUrl}" alt="Photo 2">`;
     } else {
       comparePhoto2.innerHTML = `<span class="placeholder-text">Select a photo</span>`;
     }
@@ -430,6 +514,7 @@ if (isProgressPage) {
   photoSelect1.addEventListener("change", updateComparison);
   photoSelect2.addEventListener("change", updateComparison);
 
+  // Initial render
   renderMeasurements();
   renderPhotos();
 }
@@ -444,103 +529,230 @@ async function generatePDF() {
   const { jspdf } = window;
   const { jsPDF } = jspdf;
   const doc = new jsPDF();
-  let y = 20;
+  let y = 20; // Начальная Y-координата
+  const margin = 15; // Отступы слева и справа
+  const pageHeight = doc.internal.pageSize.height; // Высота страницы
 
-  const addText = (text, size, isBold = false) => {
-    doc.setFont(undefined, isBold ? "bold" : "normal");
+  // --- Helper function to add text and manage page breaks ---
+  const addSectionTitle = (title, size = 18, align = "left", yOffset = 15) => {
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(size);
-    doc.text(text, 10, y);
-    y += size === 18 ? 15 : 10;
+    y += yOffset;
+    if (y > pageHeight - margin) {
+      // Проверка на выход за пределы страницы
+      doc.addPage();
+      y = margin; // Сброс Y на новую страницу
+    }
+    if (align === "center") {
+      doc.text(title, doc.internal.pageSize.width / 2, y, { align: "center" });
+    } else {
+      doc.text(title, margin, y);
+    }
+    y += 10; // Отступ после заголовка
   };
 
+  const addTextLine = (
+    text,
+    size = 10,
+    fontStyle = "normal",
+    yOffset = 7,
+    maxWidth = 180
+  ) => {
+    doc.setFont("helvetica", fontStyle);
+    doc.setFontSize(size);
+    if (y > pageHeight - margin - yOffset) {
+      // Проверка на выход за пределы страницы перед добавлением текста
+      doc.addPage();
+      y = margin;
+    }
+    const splitText = doc.splitTextToSize(text, maxWidth);
+    doc.text(splitText, margin, y);
+    y += splitText.length * yOffset; // Увеличиваем Y на высоту текста
+  };
+
+  const addSeparator = () => {
+    y += 5;
+    if (y > pageHeight - margin) {
+      doc.addPage();
+      y = margin;
+    }
+    doc.setLineWidth(0.2);
+    doc.line(margin, y, doc.internal.pageSize.width - margin, y);
+    y += 5;
+  };
+
+  const formatValue = (value, unit = "") => {
+    return value !== null && value !== "" ? `${value} ${unit}` : "—";
+  };
+
+  // --- Load Data ---
   const trainings = JSON.parse(localStorage.getItem("trainings") || "[]");
   const measurements = JSON.parse(localStorage.getItem("measurements") || "[]");
-  const photos = JSON.parse(localStorage.getItem("photos") || "[]");
+  const photos = JSON.parse(localStorage.getItem("photos") || "[]"); // Фотографии тоже
+  const userHeight = localStorage.getItem("userHeight") || 0;
 
-  // Training Report
-  addText("Training Report", 24, true);
+  // --- Cover Page (Optional, but adds to "diary" feel) ---
+  addSectionTitle("My Fitness & Progress Diary", 28, "center", 50);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "italic");
+  doc.text(
+    `Generated on: ${new Date().toLocaleDateString()}`,
+    doc.internal.pageSize.width / 2,
+    y + 20,
+    { align: "center" }
+  );
+  y += 40;
 
-  addText("Cardio Training", 16, true);
-  if (trainings.some((t) => t.activity)) {
-    trainings
-      .filter((t) => t.activity)
-      .forEach((t) => {
-        doc.text(
-          `${t.date} | ${t.activity} | Time: ${t.time} min | Dist: ${t.distance} km | Speed: ${t.speed} km/h | Steps: ${t.steps}`,
-          10,
-          y
-        );
-        y += 8;
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
-      });
+  // Add a simple aesthetic element
+  doc.setDrawColor(0, 0, 0); // Black color
+  doc.rect(
+    margin,
+    margin,
+    doc.internal.pageSize.width - 2 * margin,
+    pageHeight - 2 * margin,
+    "S"
+  ); // Simple border
+
+  doc.addPage();
+  y = margin; // Reset Y for new page
+
+  // --- Training Report ---
+  addSectionTitle("Training Report", 24);
+  addSeparator();
+
+  addSectionTitle("Cardio Training", 16);
+  const cardioTrainings = trainings.filter((t) => t.activity);
+  if (cardioTrainings.length > 0) {
+    cardioTrainings.forEach((t) => {
+      const text = `${t.date} | ${formatValue(
+        t.activity
+      )} | Time: ${formatValue(t.time, "min")} | Dist: ${formatValue(
+        t.distance,
+        "km"
+      )} | Speed: ${formatValue(t.speed, "km/h")} | Steps: ${formatValue(
+        t.steps
+      )}`;
+      addTextLine(text);
+    });
   } else {
-    doc.text("No cardio data available.", 10, y);
-    y += 8;
+    addTextLine("No cardio data available.");
   }
+  addSeparator();
 
-  y += 10;
-  addText("Strength Training", 16, true);
-  if (trainings.some((t) => t.exercise)) {
-    trainings
-      .filter((t) => t.exercise)
-      .forEach((t) => {
-        doc.text(
-          `${t.date} | ${t.exercise} ${t.sets}x${t.reps} @${t.weight}kg | Notes: ${t.notesEx}`,
-          10,
-          y
-        );
-        y += 8;
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
-      });
+  addSectionTitle("Strength Training", 16);
+  const strengthTrainings = trainings.filter((t) => t.exercise);
+  if (strengthTrainings.length > 0) {
+    strengthTrainings.forEach((t) => {
+      const text = `${t.date} | ${formatValue(t.exercise)} ${formatValue(
+        t.sets
+      )}x${formatValue(t.reps)} @${formatValue(
+        t.weight,
+        "kg"
+      )} | Notes: ${formatValue(t.notesEx)}`;
+      addTextLine(text);
+    });
   } else {
-    doc.text("No strength data available.", 10, y);
-    y += 8;
+    addTextLine("No strength data available.");
   }
+  addSeparator();
 
-  y += 10;
-  addText("Reflections & Goals", 16, true);
-  if (trainings.some((t) => t.notes)) {
-    trainings
-      .filter((t) => t.notes)
-      .forEach((t) => {
-        doc.text(`${t.date}: ${t.notes}`, 10, y, { maxWidth: 180 });
-        y += 12;
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
-      });
+  addSectionTitle("Reflections & Goals", 16);
+  const reflections = trainings.filter((t) => t.notes);
+  if (reflections.length > 0) {
+    reflections.forEach((t) => {
+      addTextLine(`${t.date}: ${formatValue(t.notes)}`, 10, "normal", 7, 180); // MaxWidth for notes
+    });
   } else {
-    doc.text("No reflections available.", 10, y);
-    y += 8;
+    addTextLine("No reflections or goals recorded.");
   }
+  addSeparator();
 
-  // Add Body Measurements
+  // --- Body Measurements ---
   if (measurements.length > 0) {
     doc.addPage();
-    y = 20;
-    addText("Body Measurements", 24, true);
+    y = margin;
+    addSectionTitle("Body Measurements", 24);
+    addSeparator();
+
+    measurements.sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date ascending
+
     measurements.forEach((m) => {
-      doc.text(
-        `${m.date} | Waist: ${m.waist} cm | Chest: ${m.chest} cm | Hips: ${m.hips} cm | Biceps: ${m.biceps} cm`,
-        10,
-        y
-      );
-      y += 8;
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
+      const bmi =
+        m.weight && userHeight > 0
+          ? (m.weight / ((userHeight / 100) * (userHeight / 100))).toFixed(2)
+          : "—";
+      const text = `${m.date} | Weight: ${formatValue(
+        m.weight,
+        "kg"
+      )} | BMI: ${bmi} | Waist: ${formatValue(
+        m.waist,
+        "cm"
+      )} | Chest: ${formatValue(m.chest, "cm")} | Hips: ${formatValue(
+        m.hips,
+        "cm"
+      )} | Biceps: ${formatValue(m.biceps, "cm")}`;
+      addTextLine(text, 10, "normal", 7, 180); // MaxWidth for measurements
     });
+    addSeparator();
   }
 
-  doc.save("training_and_progress_report.pdf");
+  // --- Photo Gallery (This is complex and might need more advanced libraries for complex layouts) ---
+  if (photos.length > 0) {
+    doc.addPage();
+    y = margin;
+    addSectionTitle("Photo Progress Gallery", 24);
+    addSeparator();
+    addTextLine(
+      "Note: Photos are scaled to fit. For high-res comparison, use the web app.",
+      8,
+      "italic"
+    );
+    y += 5; // Extra space after note
+
+    const imgWidth = 80;
+    const imgHeight = 100; // Adjust as needed
+    let x = margin;
+    let photosPerRow = Math.floor(
+      (doc.internal.pageSize.width - 2 * margin) / (imgWidth + 10)
+    ); // 10px spacing
+
+    for (const photoObj of photos) {
+      if (y + imgHeight + 20 > pageHeight - margin) {
+        // 20 for text below image
+        doc.addPage();
+        y = margin;
+        x = margin;
+      }
+
+      try {
+        // `addImage` takes base64 string, x, y, width, height
+        doc.addImage(photoObj.photoUrl, "JPEG", x, y, imgWidth, imgHeight);
+        addTextLine(
+          `${photoObj.date} | ${formatValue(photoObj.weight, "kg")}`,
+          8,
+          "normal",
+          5,
+          imgWidth
+        );
+        y += imgHeight + 15; // Move y below image and text
+
+        x += imgWidth + 10; // Move x for next image
+        if (x + imgWidth > doc.internal.pageSize.width - margin) {
+          // If next image goes off page
+          x = margin; // Reset x for new row
+        } else {
+          y -= imgHeight + 15; // If not new row, reset y to align with current row
+        }
+      } catch (error) {
+        console.error("Error adding image to PDF:", error);
+        addTextLine(`[Image failed to load: ${photoObj.date}]`, 10, "italic");
+        y += imgHeight + 15;
+      }
+    }
+    addSeparator();
+  }
+
+  doc.save("fitness_progress_diary.pdf");
 }
 
 // ======== Intersection Observer Animation ========

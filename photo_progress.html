@@ -89,12 +89,27 @@
             </div>
             <form id="photoForm" class="photo-form-wrapper">
                 <input type="date" id="photoDate" required>
-                <input type="number" id="photoWeight" placeholder="Weight (kg)" step="0.1">
-                <input type="file" id="photoInput" accept="image/*" class="custom-file-input" required>
-                <button type="submit" id="addPhotoBtn" class="glow-btn">Add Photo</button>
+                <input type="number" id="photoWeight" placeholder="Weight (kg)" step="0.1" required>
+
+                <div class="photo-capture-area">
+                    <video id="cameraStream" autoplay></video>
+                    <canvas id="photoCanvas" style="display: none;"></canvas>
+                    <img id="capturedPhoto" src="" alt="Captured Photo" style="display: none;">
+                </div>
+
+                <div class="photo-actions">
+                    <button type="button" id="toggleCameraBtn" class="glow-btn">
+                        <i class="fas fa-camera"></i> Take Photo
+                    </button>
+                    <input type="file" id="photoInput" accept="image/*" class="custom-file-input">
+                </div>
+
+                <button type="submit" id="savePhotoBtn" class="glow-btn" style="display: none;">Save Photo</button>
+                <button type="button" id="retakePhotoBtn" class="glow-btn" style="display: none;">Retake</button>
             </form>
+
             <div id="photoGallery" class="photo-grid"></div>
-            <p id="noPhotosMessage" class="no-data-message" style="display: none;">No photos yet. Upload at least one to
+            <p id="noPhotosMessage" class="no-data-message" style="display: none;">No photos yet. Add at least one to
                 see it here.</p>
         </section>
 

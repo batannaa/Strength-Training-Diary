@@ -679,3 +679,38 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* Photo Capture Styles */
+.photo-capture-area {
+  width: 100%;
+  max-width: 400px;
+  /* Adjust as needed */
+  margin: 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background-color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#cameraStream,
+#capturedPhoto,
+#photoCanvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.photo-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.photo-actions .custom-file-input {
+  flex-grow: 1;
+}
